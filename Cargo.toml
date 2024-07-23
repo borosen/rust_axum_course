@@ -4,3 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+tokio = { version = "1.38.1", features = ["full"] }
+
+#Axum
+axum = "0.7.5"
+
+[dev-dependencies]
+anyhow = "1.0.86"
