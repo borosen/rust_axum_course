@@ -1,29 +1,37 @@
 #![allow(unused)]
 
-use axum::{extract::{Path, Query}, response::{Html, IntoResponse}, routing::get, Router};
+use axum::{extract::{Path, Query}, response::{Html, IntoResponse}, routing::{get, Route}, Router};
 use serde::Deserialize;
 use tokio::net::TcpListener;
+use tower_http::services::ServeDir;
 
 #[tokio::main]
 async fn main() {
-    let routes_hello = Router::new()
-    .route("/hello", get(handler_hello))
-    .route(
-        "/hello/:name",
-        get(handler_hello2)
-        
-    );
+    let routes_all = Router::new().merge(routes_hello()).fallback_service(routes_static());
 
     // region:    --- Start server
     let tcp_listener = TcpListener::bind("127.0.0.1:8080").await.unwrap();
     println!("--> LISTENING  on {:?}", tcp_listener.local_addr().unwrap());
     println!();
-    axum::serve(tcp_listener, routes_hello.into_make_service()).await.unwrap();
+    axum::serve(tcp_listener, routes_all.into_make_service()).await.unwrap();
     // endregion: --- Start server 
 }
 
+fn routes_static() -> Router {
+    Router::new().nest_service("/", ServeDir::new("./"))
+}
 
-// region:    --- Hello handler
+// region:    --- Routes Hello
+
+fn routes_hello() -> Router {
+    Router::new()
+    .route("/hello", get(handler_hello))
+    .route(
+        "/hello/:name",
+        get(handler_hello2)
+        
+    )
+}
 
 #[derive(Debug, Deserialize)]
 struct HelloParams {
@@ -44,4 +52,4 @@ async fn handler_hello2(Path(name): Path<String>)-> impl IntoResponse {
     Html(format!("Hello {name}"))
 }
 
-// endregion: --- Hello handler
+// endregion: --- Routes Hello
