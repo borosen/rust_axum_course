@@ -15,7 +15,6 @@ async fn quick_dev() -> Result<()> {
     }));
     login_request.await?.print().await?;
 
-
     Ok(())
 
 }
