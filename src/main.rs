@@ -15,7 +15,6 @@ use serde::Deserialize;
 use serde_json::json;
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
-use tower_http::services::ServeDir;
 use uuid::Uuid;
 
 mod ctx;
@@ -41,7 +40,7 @@ async fn main() -> Result<()> {
             web::mw_auth::mw_ctx_resolver,
         ))
         .layer(CookieManagerLayer::new())
-        .fallback_service(routes_static());
+        .fallback_service(web::routes_static::serve_dir());
 
     // region:    --- Start server
     let tcp_listener = TcpListener::bind("127.0.0.1:8080").await.unwrap();
@@ -53,10 +52,6 @@ async fn main() -> Result<()> {
     // endregion: --- Start server
 
     Ok(())
-}
-
-fn routes_static() -> Router {
-    Router::new().nest_service("/", ServeDir::new("./"))
 }
 
 async fn main_response_mapper(

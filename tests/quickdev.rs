@@ -26,6 +26,8 @@ async fn quick_dev() -> Result<()> {
 
     let _tickets = hc.do_get("/api/tickets").await?.print().await?;
 
+    //hc.do_get("/src/main.rs").await?.print().await?;
+
     //let delete_ticket = hc.do_delete("/api/tickets/1").await?.print().await?;
 
     Ok(())
