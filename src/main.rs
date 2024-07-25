@@ -33,10 +33,10 @@ async fn main() -> Result<()> {
     let routes_all = Router::new()
         .merge(routes_login::routes())
         // .nest("/api", routes_rpc)
+        .fallback_service(routes_static::serve_dir())
         .layer(middleware::map_response(mw_reponse_map))
         .layer(middleware::from_fn_with_state(mm.clone(), mw_ctx_resolve))
-        .layer(CookieManagerLayer::new())
-        .fallback_service(routes_static::serve_dir());
+        .layer(CookieManagerLayer::new());
 
     // region:    --- Start server
     let tcp_listener = TcpListener::bind("127.0.0.1:8080").await.unwrap();
