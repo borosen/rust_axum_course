@@ -18,6 +18,10 @@ lazy-regex = "3.1.0"
 async-trait = "0.1.81"
 serde_with = "3.9.0"
 
+#Tracing
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+
 # Other
 strum_macros = "0.26.4"
 uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
