@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 use axum::{http::StatusCode, response::IntoResponse};
 use serde::{Deserialize, Serialize};
 

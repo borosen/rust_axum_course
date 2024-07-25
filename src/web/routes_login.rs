@@ -1,7 +1,5 @@
-#![allow(unused)]
-
 use axum::{routing::post, Json, Router};
-use serde::{Deserialize};
+use serde::Deserialize;
 use serde_json::{json, Value};
 use tower_cookies::{Cookie, Cookies};
 
@@ -17,8 +15,10 @@ struct LoginPayload {
     password: String,
 }
 
-async fn api_login(cookies: Cookies, Json(LoginPayload{username, password}): Json<LoginPayload>) -> Result<Json<Value>> {
-
+async fn api_login(
+    cookies: Cookies,
+    Json(LoginPayload { username, password }): Json<LoginPayload>,
+) -> Result<Json<Value>> {
     println!("->> {:<12} - api_login", "HANDLER");
 
     if username != "demo1" || password != "welcome" {

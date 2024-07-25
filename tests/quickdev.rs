@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 use anyhow::Result;
 use serde_json::json;
 
@@ -26,7 +24,7 @@ async fn quick_dev() -> Result<()> {
     );
     create_ticket.await?.print().await?;
 
-    let tickets = hc.do_get("/api/tickets").await?.print().await?;
+    let _tickets = hc.do_get("/api/tickets").await?.print().await?;
 
     //let delete_ticket = hc.do_delete("/api/tickets/1").await?.print().await?;
 

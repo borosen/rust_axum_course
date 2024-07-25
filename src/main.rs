@@ -1,13 +1,11 @@
-#![allow(unused)]
-
 pub use self::error::{Error, Result};
 
 use axum::{
     extract::{Path, Query},
-    http::{status, Method, Uri},
+    http::{Method, Uri},
     middleware,
     response::{Html, IntoResponse, Response},
-    routing::{get, Route},
+    routing::get,
     Json, Router,
 };
 use ctx::Ctx;
@@ -90,7 +88,7 @@ async fn main_response_mapper(
 
     // Build server log line
     let client_error = client_status_error.unzip().1;
-    log_request(uuid, req_method, uri, ctx, service_error, client_error).await;
+    let _log = log_request(uuid, req_method, uri, ctx, service_error, client_error).await;
     println!();
     error_response.unwrap_or(res)
 }
