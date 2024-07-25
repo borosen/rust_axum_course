@@ -18,3 +18,5 @@ RUST_LOG="rust_web_app=debug"
 # This will be relative to Cargo.tlml
 # In deployed images, probably use absolute path.
 SERVICE_WEB_FOLDER="web-folder/"
+
+#RUST_BACKTRACE="1"
