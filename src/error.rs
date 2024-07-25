@@ -5,16 +5,17 @@ use serde::{Deserialize, Serialize};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Error {
     LoginFail,
 
     // Auth error
+    AuthFailCtxNotInRequestExt,
     AuthFailNoAuthTokenCookie,
     AuthFailTokenWrongFormat,
-    
+
     // Model errors
-    TicketDeleteFailIdNotFound {id: u64},
+    TicketDeleteFailIdNotFound { id: u64 },
 }
 
 impl IntoResponse for Error {
