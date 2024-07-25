@@ -9,15 +9,21 @@ async fn quick_dev() -> Result<()> {
 
     hc.do_get("/hello/Mark").await?.print().await?;
 
-    let login_request = hc.do_post("/api/login", json!({
-        "username": "demo1",
-        "password": "welcome"
-    }));
+    let login_request = hc.do_post(
+        "/api/login",
+        json!({
+            "username": "demo1",
+            "password": "welcome"
+        }),
+    );
     login_request.await?.print().await?;
 
-    let create_ticket = hc.do_post("/api/tickets", json!({
-        "title": "First ticket"
-    }));
+    let create_ticket = hc.do_post(
+        "/api/tickets",
+        json!({
+            "title": "First ticket"
+        }),
+    );
     create_ticket.await?.print().await?;
 
     let tickets = hc.do_get("/api/tickets").await?.print().await?;
@@ -25,5 +31,4 @@ async fn quick_dev() -> Result<()> {
     //let delete_ticket = hc.do_delete("/api/tickets/1").await?.print().await?;
 
     Ok(())
-
 }
