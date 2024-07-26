@@ -5,7 +5,7 @@ use modql::field::Fields;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-use super::base::{self, DbBackendModuleController};
+use super::base::{self, DbBmc};
 
 // region:    --- Task Types
 
@@ -30,7 +30,7 @@ pub struct TaskForUpdate {
 // region:    --- TaskBmc
 pub struct TaskBmc;
 
-impl DbBackendModuleController for TaskBmc {
+impl DbBmc for TaskBmc {
     const TABLE: &'static str = "task";
 }
 

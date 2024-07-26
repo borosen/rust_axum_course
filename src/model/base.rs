@@ -15,9 +15,10 @@ use sqlx::FromRow;
 #[derive(Iden)]
 pub enum CommonIden {
     Id,
+    Username,
 }
 
-pub trait DbBackendModuleController {
+pub trait DbBmc {
     const TABLE: &'static str;
     fn table_ref() -> TableRef {
         TableRef::Table(SIden(Self::TABLE).into_iden())
@@ -26,7 +27,7 @@ pub trait DbBackendModuleController {
 
 pub async fn get<MC, E>(_ctx: &Ctx, mm: &ModelManager, id: i64) -> Result<E>
 where
-    MC: DbBackendModuleController,
+    MC: DbBmc,
     E: for<'r> FromRow<'r, PgRow> + Unpin + Send,
     E: HasFields,
 {
@@ -54,7 +55,7 @@ where
 
 pub async fn list<MC, E>(_ctx: &Ctx, mm: &ModelManager) -> Result<Vec<E>>
 where
-    MC: DbBackendModuleController,
+    MC: DbBmc,
     E: for<'r> FromRow<'r, PgRow> + Unpin + Send,
     E: HasFields,
 {
@@ -76,7 +77,7 @@ where
 
 pub async fn delete<MC>(_ctx: &Ctx, mm: &ModelManager, id: i64) -> Result<()>
 where
-    MC: DbBackendModuleController,
+    MC: DbBmc,
 {
     let db = mm.db();
 
@@ -106,7 +107,7 @@ where
 
 pub async fn create<MC, E>(_ctx: &Ctx, mm: &ModelManager, data: E) -> Result<i64>
 where
-    MC: DbBackendModuleController,
+    MC: DbBmc,
     E: HasFields,
 {
     let db = mm.db();
@@ -130,7 +131,7 @@ where
 
 pub async fn update<MC, E>(_ctx: &Ctx, mm: &ModelManager, id: i64, data: E) -> Result<()>
 where
-    MC: DbBackendModuleController,
+    MC: DbBmc,
     E: HasFields,
 {
     let db = mm.db();
