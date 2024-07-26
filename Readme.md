@@ -1,4 +1,5 @@
-https://youtu.be/3cA_mk4vdWY?t=4738
+https://youtu.be/3cA_mk4vdWY?t=6242
+
 
 https://youtu.be/3cA_mk4vdWY?t=33
 

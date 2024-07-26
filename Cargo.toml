@@ -12,7 +12,10 @@ tower-http = { version = "0.5.2", features = ["fs"] }
 tower-cookies = "0.10.0"
 
 #Sqlx
-sqlx = { version = "0.8", features = ["macros", "runtime-tokio", "postgres", "uuid" ] }
+sqlx = { version = "0.7", features = [ "runtime-tokio", "postgres", "uuid" ] }
+sea-query = "0.30"
+sea-query-binder = { version = "0.5", features = ["sqlx-postgres", "with-uuid", "with-time" ] }
+modql = {version = "0.3.4", features = ["with-sea-query"]}
 
 #Serde
 serde = { version = "1.0.204", features = ["derive"] }
