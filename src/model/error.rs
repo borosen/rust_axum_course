@@ -1,3 +1,5 @@
+use crate::crypt;
+
 use super::store;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
@@ -10,6 +12,7 @@ pub enum Error {
     EntityNotFound { entity: &'static str, id: i64 },
 
     // -- Modules
+    Crypt(crypt::Error),
     Store(store::Error),
 
     // -- Externals
@@ -36,6 +39,12 @@ impl From<sqlx::Error> for Error {
 impl From<sea_query::error::Error> for Error {
     fn from(value: sea_query::error::Error) -> Self {
         Self::Sea(value)
+    }
+}
+
+impl From<crypt::Error> for Error {
+    fn from(value: crypt::Error) -> Self {
+        Self::Crypt(value)
     }
 }
 

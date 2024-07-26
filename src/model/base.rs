@@ -16,6 +16,7 @@ use sqlx::FromRow;
 pub enum CommonIden {
     Id,
     Username,
+    Pwd,
 }
 
 pub trait DbBmc {

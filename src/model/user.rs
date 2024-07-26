@@ -1,3 +1,4 @@
+use crate::crypt::{pwd, EncryptContent};
 use crate::ctx::Ctx;
 use crate::model::{
     base::{self, DbBmc},
@@ -85,7 +86,7 @@ impl UserBmc {
         let db = mm.db();
 
         let (sql, values) = Query::select()
-            .from(UserBmc::table_ref())
+            .from(Self::table_ref())
             .and_where(Expr::col(CommonIden::Username).eq(username))
             .columns(E::field_column_refs())
             .limit(1)
@@ -96,6 +97,27 @@ impl UserBmc {
             .await?;
 
         Ok(user)
+    }
+
+    pub async fn update_pdw(ctx: &Ctx, mm: &ModelManager, id: i64, pwd_clear: &str) -> Result<()> {
+        let db = mm.db();
+
+        let user: UserForLogin = Self::get(ctx, mm, id).await?;
+
+        let pwd = pwd::encrypt_pwd(&EncryptContent {
+            content: pwd_clear.to_string(),
+            salt: user.pwd_salt.to_string(),
+        })?;
+
+        let (sql, values) = Query::update()
+            .table(Self::table_ref())
+            .values([(CommonIden::Pwd, pwd.into())])
+            .and_where(Expr::col(CommonIden::Id).eq(id))
+            .build_sqlx(PostgresQueryBuilder);
+
+        sqlx::query_with(&sql, values).execute(db).await?;
+
+        Ok(())
     }
 }
 
