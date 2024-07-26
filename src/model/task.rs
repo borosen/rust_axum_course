@@ -73,7 +73,6 @@ impl TaskBmc {
 // region:    --- Tests
 
 #[cfg(test)]
-#[serial_test::serial]
 mod tests {
     #![allow(unused)]
     use crate::_dev_utils;
@@ -82,6 +81,7 @@ mod tests {
     use anyhow::Result;
     use serial_test::serial;
 
+    #[serial]
     #[tokio::test]
     async fn test_create_ok() -> Result<()> {
         // -- Setup & Fixtures
@@ -98,7 +98,53 @@ mod tests {
 
         assert_eq!(task.title, fx_title);
 
-        TaskBmc::delete(&ctx, &mm, id).await?;
+        TaskBmc::delete(&ctx, &mm, id).await;
+
+        Ok(())
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_get_err_not_found() -> Result<()> {
+        let mm = _dev_utils::init_test().await;
+        let ctx = Ctx::root_ctx();
+        let fx_id = 100;
+
+        let res = TaskBmc::get(&ctx, &mm, fx_id).await;
+
+        assert!(
+            matches!(
+                res,
+                Err(Error::EntityNotFound {
+                    entity: "task",
+                    id: 100
+                }),
+            ),
+            "EntityNotFound not matching"
+        );
+
+        Ok(())
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_delete_err_not_found() -> Result<()> {
+        let mm = _dev_utils::init_test().await;
+        let ctx = Ctx::root_ctx();
+        let fx_id = 100;
+
+        let res = TaskBmc::delete(&ctx, &mm, fx_id).await;
+
+        assert!(
+            matches!(
+                res,
+                Err(Error::EntityNotFound {
+                    entity: "task",
+                    id: 100
+                }),
+            ),
+            "EntityNotFound not matching"
+        );
 
         Ok(())
     }
