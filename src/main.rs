@@ -47,7 +47,7 @@ async fn main() -> Result<()> {
     //   .route_layer(middleware::from_fn(mw_ctx_require));
 
     let routes_all = Router::new()
-        .merge(routes_login::routes())
+        .merge(routes_login::routes(mm.clone()))
         // .nest("/api", routes_rpc)
         .fallback_service(routes_static::serve_dir())
         .layer(middleware::map_response(mw_reponse_map))
