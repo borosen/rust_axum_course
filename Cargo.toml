@@ -8,14 +8,14 @@ tokio = { version = "1.38.1", features = ["full"] }
 
 #Axum
 axum = "0.7.5"
-tower-http = { version = "0.5.2", features = ["fs"] }
 tower-cookies = "0.10.0"
+tower-http = { version = "0.5.2", features = ["fs"] }
 
 #Sqlx
-sqlx = { version = "0.7", features = [ "runtime-tokio", "postgres", "uuid" ] }
+modql = {version = "0.3.4", features = ["with-sea-query"]}
 sea-query = "0.30"
 sea-query-binder = { version = "0.5", features = ["sqlx-postgres", "with-uuid", "with-time" ] }
-modql = {version = "0.3.4", features = ["with-sea-query"]}
+sqlx = { version = "0.7", features = [ "runtime-tokio", "postgres", "uuid" ] }
 
 #Serde
 serde = { version = "1.0.204", features = ["derive"] }
@@ -27,17 +27,18 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
 #Crypt & Encoding
-rand = "0.8"
-hmac = "0.12"
-sha2 = "0.10"
 base64-url = "3.0.0"
+hmac = "0.12"
+rand = "0.8"
+sha2 = "0.10"
 
 # Other
-strum_macros = "0.26.4"
-uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
-lazy-regex = "3.1.0"
 async-trait = "0.1.81"
 derive_more = {version = "1.0.0-beta", features = ["from"] }
+lazy-regex = "3.1.0"
+strum_macros = "0.26.4"
+time = "0.3.36"
+uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
 
 [dev-dependencies]
 anyhow = "1.0.86"
