@@ -3,7 +3,9 @@ use std::str::FromStr;
 
 use crate::config;
 use crate::crypt::{Error, Result};
-use crate::utils::{b64u_decode, b64u_encode};
+use crate::utils::{b64u_decode, b64u_encode, now_utc, now_utc_plus_sec_str, parse_utc};
+
+use super::{encrypt_into_b64u, EncryptContent};
 
 // region:    --- Token Type
 
@@ -68,15 +70,47 @@ pub fn validate_web_token(origin_token: &Token, salt: &str) -> Result<()> {
 // region:    --- (private) Token Gen and Validation
 
 fn _generate_token(ident: &str, duration_sec: f64, salt: &str, key: &[u8]) -> Result<Token> {
-    todo!()
+    let ident = ident.to_string();
+    let exp = now_utc_plus_sec_str(duration_sec);
+
+    let sign_b64u = _token_sign_into_b64u(&ident, &exp, salt, key)?;
+
+    Ok(Token {
+        ident,
+        exp,
+        sign_b64u,
+    })
 }
 
 fn _validate_token_sign_and_exp(origin_token: &Token, salt: &str, key: &[u8]) -> Result<()> {
-    todo!()
+    let new_sign_b64u = _token_sign_into_b64u(&origin_token.ident, &origin_token.exp, salt, key)?;
+
+    if new_sign_b64u != origin_token.sign_b64u {
+        return Err(Error::TokenSignatureNotMatching);
+    }
+
+    let origin_exp = parse_utc(&origin_token.exp).map_err(|_| Error::TokenExpNotIso)?;
+
+    let now = now_utc();
+
+    if origin_exp < now {
+        return Err(Error::TokenExpired);
+    }
+
+    Ok(())
 }
 
-fn _token_sign_into_b64u(ident: &str, duration_sec: f64, salt: &str, key: &[u8]) -> Result<String> {
-    todo!()
+fn _token_sign_into_b64u(ident: &str, exp: &str, salt: &str, key: &[u8]) -> Result<String> {
+    let content = format!("{}.{}", b64u_encode(ident), b64u_encode(exp));
+    encrypt_into_b64u(
+        key,
+        &EncryptContent {
+            content,
+            salt: salt.to_string(),
+        },
+    )
+
+    //Ok(signature)
 }
 
 // endregion: --- (private) Token Gen and Validation
@@ -84,6 +118,8 @@ fn _token_sign_into_b64u(ident: &str, duration_sec: f64, salt: &str, key: &[u8])
 #[cfg(test)]
 mod tests {
     #![allow(unused)]
+    use std::{thread, time::Duration};
+
     use super::*;
     use anyhow::Result;
 
@@ -113,6 +149,43 @@ mod tests {
         let token: Token = fx_token_str.parse()?;
 
         assert_eq!(format!("{token:?}"), format!("{fx_token:?}"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_validate_web_token_ok() -> Result<()> {
+        let fx_user = "user_one";
+        let fx_salt = "pepper";
+        let fx_duration_sec = 0.02; // 20ms
+        let token_key = &config().TOKEN_KEY;
+        let fx_token = _generate_token(fx_user, fx_duration_sec, fx_salt, token_key)?;
+
+        thread::sleep(Duration::from_millis(10));
+        let res = validate_web_token(&fx_token, fx_salt);
+
+        // -- Check
+        res?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_validate_web_token_err_expired() -> Result<()> {
+        let fx_user = "user_one";
+        let fx_salt = "pepper";
+        let fx_duration_sec = 0.01; // 10ms
+        let token_key = &config().TOKEN_KEY;
+        let fx_token = _generate_token(fx_user, fx_duration_sec, fx_salt, token_key)?;
+
+        thread::sleep(Duration::from_millis(20));
+        let res = validate_web_token(&fx_token, fx_salt);
+
+        // -- Check
+        assert!(
+            matches!(res, Err(Error::TokenExpired)),
+            "Should have matched `Err(Error::TokenExpired)` but was `{res:?}`"
+        );
 
         Ok(())
     }
