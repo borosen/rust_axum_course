@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{model, web};
+use crate::{crypt, model, web};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use derive_more::From;
@@ -14,14 +14,15 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[serde(tag = "type", content = "data")]
 pub enum Error {
     // -- Login
-    LoginFailUsernameNotFound,
-    LoginFailUserHasNoPwd { user_id: i64 },
     LoginFailPwdNotMatching { user_id: i64 },
+    LoginFailUserHasNoPwd { user_id: i64 },
+    LoginFailUsernameNotFound,
 
     // -- CtxExtError
     CtxExt(web::mw_auth::CtxExtError),
 
     // -- Modules
+    Crypt(crypt::Error),
     Model(model::Error),
 }
 
@@ -46,6 +47,12 @@ impl IntoResponse for Error {
 impl From<model::Error> for Error {
     fn from(value: model::Error) -> Self {
         Self::Model(value)
+    }
+}
+
+impl From<crypt::Error> for Error {
+    fn from(value: crypt::Error) -> Self {
+        Self::Crypt(value)
     }
 }
 
