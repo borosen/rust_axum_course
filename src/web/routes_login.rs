@@ -11,11 +11,16 @@ use serde_json::{json, Value};
 use tower_cookies::{Cookie, Cookies};
 use tracing::debug;
 
+use super::remove_token_cookie;
+
 pub fn routes(mm: ModelManager) -> Router {
     Router::new()
         .route("/api/login", post(api_login_handler))
+        .route("/api/logoff", post(api_logoff_handler))
         .with_state(mm)
 }
+
+// region:    --- Login
 
 async fn api_login_handler(
     State(mm): State<ModelManager>,
@@ -67,3 +72,34 @@ struct LoginPayload {
     username: String,
     pwd: String,
 }
+
+// endregion: --- Login
+
+// region:    --- Logoff
+#[derive(Debug, Deserialize)]
+struct LogoffPayload {
+    logoff: bool,
+}
+
+async fn api_logoff_handler(
+    cookies: Cookies,
+    Json(payload): Json<LogoffPayload>,
+) -> Result<Json<Value>> {
+    debug!("{:<12} - api_logoff_handler", "HANDLER");
+
+    let should_logoff = payload.logoff;
+
+    if should_logoff {
+        web::remove_token_cookie(&cookies)?;
+    }
+
+    let body = Json(json!({
+        "result": {
+            "logged_off": should_logoff
+        }
+    }));
+
+    Ok(body)
+}
+
+// endregion: --- Logoff
