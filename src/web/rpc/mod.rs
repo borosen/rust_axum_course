@@ -15,7 +15,7 @@ use axum::{
 };
 use serde::Deserialize;
 use serde_json::{from_value, json, to_value, Value};
-use task_rpc::{create_task, list_tasks};
+use task_rpc::{create_task, delete_task, list_tasks, update_task};
 use tokio::io::Join;
 use tracing::debug;
 
@@ -60,7 +60,43 @@ async fn rpc_handler(
     ctx: Ctx,
     Json(rpc_req): Json<RpcRequest>,
 ) -> Response {
-    _rpc_handler(ctx, mm, rpc_req).await.into_response()
+    let rpc_info = RpcInfo {
+        id: rpc_req.id.clone(),
+        method: rpc_req.method.clone(),
+    };
+
+    // -- Exec & Store RpcInfo in reponse.
+    let mut res = _rpc_handler(ctx, mm, rpc_req).await.into_response();
+
+    res.extensions_mut().insert(rpc_info);
+
+    res
+}
+
+/// RPC basic information holding the id and method for further logging.
+#[derive(Clone, Debug)]
+pub struct RpcInfo {
+    pub id: Option<Value>,
+    pub method: String,
+}
+
+macro_rules! exec_rpc_fn {
+    // Without Params
+    ($rpc_fn:expr, $ctx:expr, $mm:expr) => {
+        $rpc_fn($ctx, $mm).await.map(to_value)??
+    };
+
+    // With Params
+    ($rpc_fn:expr, $ctx:expr, $mm:expr, $params:expr) => {{
+        let rpc_fn_name = stringify!($rpc);
+        let params = $params.ok_or(Error::RpcMissingParams {
+            rpc_method: rpc_fn_name.to_string(),
+        })?;
+        let params = from_value(params).map_err(|_| Error::RpcFailJsonParams {
+            rpc_method: rpc_fn_name.to_string(),
+        })?;
+        $rpc_fn($ctx, $mm, params).await.map(to_value)??
+    }};
 }
 
 async fn _rpc_handler(ctx: Ctx, mm: ModelManager, rpc_req: RpcRequest) -> Result<Json<Value>> {
@@ -73,18 +109,10 @@ async fn _rpc_handler(ctx: Ctx, mm: ModelManager, rpc_req: RpcRequest) -> Result
     debug!("{:<12} - _rpc_handler - method: {rpc_method}", "HANDLER");
 
     let result_json: Value = match rpc_method.as_str() {
-        "create_task" => {
-            let params = rpc_params.ok_or(Error::RpcMissingParams {
-                rpc_method: "create_task".to_owned(),
-            })?;
-            let params = from_value(params).map_err(|_| Error::RpcFailJsonParams {
-                rpc_method: "create_task".to_string(),
-            })?;
-            create_task(ctx, mm, params).await.map(to_value)??
-        }
-        "list_task" => list_tasks(ctx, mm).await.map(to_value)??,
-        "update_task" => todo!(),
-        "delete_task" => todo!(),
+        "create_task" => exec_rpc_fn!(create_task, ctx, mm, rpc_params),
+        "list_task" => exec_rpc_fn!(list_tasks, ctx, mm),
+        "update_task" => exec_rpc_fn!(update_task, ctx, mm, rpc_params),
+        "delete_task" => exec_rpc_fn!(delete_task, ctx, mm, rpc_params),
         _ => return Err(Error::RpcMethodUnknown(rpc_method)),
     };
 

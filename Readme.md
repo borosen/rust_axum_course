@@ -1,6 +1,6 @@
-https://youtu.be/3cA_mk4vdWY?t=13100
+https://youtu.be/-dMH9UiwKqg?t=115
 
-https://youtu.be/3cA_mk4vdWY?t=33
+https://www.youtube.com/watch?v=-dMH9UiwKqg
 
 cargo watch -q -c -w src/ -w .cargo/ -x run
 
