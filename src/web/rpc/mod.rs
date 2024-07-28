@@ -4,7 +4,7 @@ mod task_rpc;
 
 use crate::{
     ctx::Ctx,
-    model::ModelManager,
+    model::{task::TaskForCreate, ModelManager},
     web::{Error, Result},
 };
 use axum::{
@@ -14,8 +14,8 @@ use axum::{
     Json, Router,
 };
 use serde::Deserialize;
-use serde_json::{json, to_value, Value};
-use task_rpc::list_tasks;
+use serde_json::{from_value, json, to_value, Value};
+use task_rpc::{create_task, list_tasks};
 use tokio::io::Join;
 use tracing::debug;
 
@@ -73,8 +73,16 @@ async fn _rpc_handler(ctx: Ctx, mm: ModelManager, rpc_req: RpcRequest) -> Result
     debug!("{:<12} - _rpc_handler - method: {rpc_method}", "HANDLER");
 
     let result_json: Value = match rpc_method.as_str() {
-        "create_task" => todo!(),
-        "list_task" => list_tasks(mm, ctx).await.map(to_value)??,
+        "create_task" => {
+            let params = rpc_params.ok_or(Error::RpcMissingParams {
+                rpc_method: "create_task".to_owned(),
+            })?;
+            let params = from_value(params).map_err(|_| Error::RpcFailJsonParams {
+                rpc_method: "create_task".to_string(),
+            })?;
+            create_task(ctx, mm, params).await.map(to_value)??
+        }
+        "list_task" => list_tasks(ctx, mm).await.map(to_value)??,
         "update_task" => todo!(),
         "delete_task" => todo!(),
         _ => return Err(Error::RpcMethodUnknown(rpc_method)),
