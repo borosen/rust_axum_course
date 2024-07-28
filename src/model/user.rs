@@ -5,7 +5,7 @@ use crate::model::{
     Error, ModelManager, Result,
 };
 use modql::field::{Fields, HasFields};
-use sea_query::{query, Expr, Mode, PostgresQueryBuilder, Query};
+use sea_query::{query, Expr, Iden, Mode, PostgresQueryBuilder, Query, SimpleExpr};
 use sea_query_binder::SqlxBinder;
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgRow, FromRow};
@@ -52,6 +52,16 @@ pub struct UserForAuth {
     pub token_salt: Uuid,
 }
 
+// Note: Since the entity properties Iden will be given by modql::field::Fields
+//       UserIden does not have to be exhaustive, but just have the columns
+//       we use in our specific code.
+#[derive(Iden)]
+enum UserIden {
+    Id,
+    Pwd,
+    Username,
+}
+
 /// Market trait
 pub trait UserBy: HasFields + for<'r> FromRow<'r, PgRow> + Unpin + Send {}
 
@@ -85,13 +95,14 @@ impl UserBmc {
     {
         let db = mm.db();
 
-        let (sql, values) = Query::select()
+        let mut query = Query::select();
+        query
             .from(Self::table_ref())
-            .and_where(Expr::col(CommonIden::Username).eq(username))
-            .columns(E::field_column_refs())
-            .limit(1)
-            .build_sqlx(PostgresQueryBuilder);
+            .columns(E::field_idens())
+            .and_where(Expr::col(UserIden::Username).eq(username))
+            .limit(1);
 
+        let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
         let user = sqlx::query_as_with::<_, E, _>(&sql, values)
             .fetch_optional(db)
             .await?;
@@ -111,11 +122,14 @@ impl UserBmc {
 
         let (sql, values) = Query::update()
             .table(Self::table_ref())
-            .values([(CommonIden::Pwd, pwd.into())])
-            .and_where(Expr::col(CommonIden::Id).eq(id))
+            .value(UserIden::Pwd, SimpleExpr::from(pwd))
+            .and_where(Expr::col(UserIden::Id).eq(id))
             .build_sqlx(PostgresQueryBuilder);
 
-        sqlx::query_with(&sql, values).execute(db).await?;
+        let count = sqlx::query_with(&sql, values)
+            .execute(db)
+            .await?
+            .rows_affected();
 
         Ok(())
     }
