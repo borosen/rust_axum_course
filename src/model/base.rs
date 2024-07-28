@@ -52,11 +52,17 @@ where
     Ok(entity)
 }
 
-pub async fn list<MC, E>(_ctx: &Ctx, mm: &ModelManager) -> Result<Vec<E>>
+pub async fn list<MC, E, F>(
+    _ctx: &Ctx,
+    mm: &ModelManager,
+    filter: Option<F>,
+    list_options: Option<ListOptions>,
+) -> Result<Vec<E>>
 where
     MC: DbBmc,
     E: for<'r> FromRow<'r, PgRow> + Unpin + Send,
     E: HasFields,
+    F: Into<FilterGroups>,
 {
     let db = mm.db();
     let mut query = Query::select();
@@ -65,8 +71,20 @@ where
         .columns(E::field_column_refs())
         .order_by(CommonIden::Id, Order::Asc);
 
-    let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+    // condition from filter
+    if let Some(filter) = filter {
+        let filter: FilterGroups = filter.into();
+        let cond: Condition = filter.try_into()?;
+        query.cond_where(cond);
+    }
 
+    // list options
+    if let Some(list_options) = list_options {
+        list_options.apply_to_sea_query(&mut query);
+    }
+
+    // -- Exec query
+    let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
     let entries: Vec<E> = sqlx::query_as_with::<_, E, _>(&sql, values)
         .fetch_all(db)
         .await?;

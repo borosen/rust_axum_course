@@ -2,6 +2,7 @@ use crate::ctx::Ctx;
 use crate::model::ModelManager;
 use crate::model::{Error, Result};
 use modql::field::Fields;
+use modql::filter::{FilterNodes, ListOptions, OpValsBool, OpValsInt64, OpValsString};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -13,6 +14,7 @@ use super::base::{self, DbBmc};
 pub struct Task {
     pub id: i64,
     pub title: String,
+    pub done: bool,
 }
 
 #[derive(Deserialize, Fields)]
@@ -20,9 +22,17 @@ pub struct TaskForCreate {
     pub title: String,
 }
 
-#[derive(Deserialize, Fields)]
+#[derive(Deserialize, Fields, Default)]
 pub struct TaskForUpdate {
     pub title: Option<String>,
+    pub done: Option<bool>,
+}
+
+#[derive(FilterNodes, Deserialize, Default, Debug)]
+pub struct TaskFilter {
+    id: Option<OpValsInt64>,
+    title: Option<OpValsString>,
+    done: Option<OpValsBool>,
 }
 
 // endregion: --- Task Types
@@ -43,8 +53,13 @@ impl TaskBmc {
         base::get::<Self, _>(ctx, mm, id).await
     }
 
-    pub async fn list(ctx: &Ctx, mm: &ModelManager) -> Result<Vec<Task>> {
-        base::list::<Self, _>(ctx, mm).await
+    pub async fn list(
+        ctx: &Ctx,
+        mm: &ModelManager,
+        filter: Option<TaskFilter>,
+        list_options: Option<ListOptions>,
+    ) -> Result<Vec<Task>> {
+        base::list::<Self, _, _>(ctx, mm, filter, list_options).await
     }
 
     pub async fn update(ctx: &Ctx, mm: &ModelManager, id: i64, data: TaskForUpdate) -> Result<()> {
@@ -66,6 +81,7 @@ mod tests {
 
     use super::*;
     use anyhow::Result;
+    use serde_json::json;
     use serial_test::serial;
 
     #[serial]
@@ -115,23 +131,64 @@ mod tests {
 
     #[serial]
     #[tokio::test]
-    async fn test_list_ok() -> Result<()> {
+    async fn test_list_all_ok() -> Result<()> {
         // -- Setup & Fixtures
         let mm = _dev_utils::init_test().await;
         let ctx = Ctx::root_ctx();
-        let fx_titles = &["test_list_ok-task 01", "test_list_ok-task 02"];
+        let fx_titles = &["test_list_all_ok-task 01", "test_list_all_ok-task 02"];
 
         let fx_tasks = _dev_utils::seed_tasks(&ctx, &mm, fx_titles).await?;
 
-        let tasks = TaskBmc::list(&ctx, &mm).await?;
+        let tasks = TaskBmc::list(&ctx, &mm, None, None).await?;
 
         let tasks: Vec<Task> = tasks
             .into_iter()
-            .filter(|t| t.title.starts_with("test_list_ok-task"))
+            .filter(|t| t.title.starts_with("test_list_all_ok-task"))
             .collect();
 
         assert_eq!(tasks.len(), 2, "number of seeded tasks.");
 
+        for task in tasks.iter() {
+            TaskBmc::delete(&ctx, &mm, task.id).await?;
+        }
+
+        Ok(())
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_list_by_filter_ok() -> Result<()> {
+        // -- Setup & Fixtures
+        let mm = _dev_utils::init_test().await;
+        let ctx = Ctx::root_ctx();
+        let fx_titles = &[
+            "test_list_by_filter_ok-task 01.a",
+            "test_list_by_filter_ok-task 01.b",
+            "test_list_by_filter_ok-task 02.a",
+            "test_list_by_filter_ok-task 02.b",
+            "test_list_by_filter_ok-task 03",
+        ];
+
+        let fx_tasks = _dev_utils::seed_tasks(&ctx, &mm, fx_titles).await?;
+
+        // -- Exec
+        let filter = serde_json::from_value(json!({
+            "title": {"$endsWith": ".a",
+            "$containsAny": ["01", "02"]},
+        }))
+        .ok();
+
+        let list_options = serde_json::from_value(json!({
+            "limit": 1,
+            "order_bys": "!id",
+        }))
+        .ok();
+        let tasks = TaskBmc::list(&ctx, &mm, filter, list_options).await?;
+
+        // -- Check
+        println!("->> {tasks:#?}");
+
+        // -- Cleanup
         for task in tasks.iter() {
             TaskBmc::delete(&ctx, &mm, task.id).await?;
         }
@@ -152,6 +209,7 @@ mod tests {
 
         let task_u = TaskForUpdate {
             title: Some(fx_title_new.to_owned()),
+            ..Default::default()
         };
 
         TaskBmc::update(&ctx, &mm, fx_task.id, task_u).await?;

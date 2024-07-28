@@ -28,6 +28,9 @@ pub enum Error {
     // --seacquery
     #[from]
     SeaQuery(#[serde_as(as = "DisplayFromStr")] sea_query::error::Error),
+
+    #[from]
+    ModqlIntoSea(#[serde_as(as = "DisplayFromStr")] modql::filter::IntoSeaError),
 }
 
 // region:    --- Error Boilerplate
