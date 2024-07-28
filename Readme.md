@@ -1,10 +1,10 @@
-https://youtu.be/3cA_mk4vdWY?t=11685
+https://youtu.be/3cA_mk4vdWY?t=12247
 
 https://youtu.be/3cA_mk4vdWY?t=33
 
 cargo watch -q -c -w src/ -w .cargo/ -x run
 
-cargo watch -q -c -w examples/ -x "run --example quickdev"
+cargo watch -q -c -w examples/ -x "run --example quickdev -- --nocapture"
 
 cargo watch -q -c -w src/ -x "test -- --nocapture"
 
